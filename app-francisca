@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Desafíos Interactivos — Escanea y juega</title>
+<style>
+  :root{
+    --bg:#0f1724; --card:#0b1220; --accent:#7dd3fc; --ok:#34d399; --bad:#f87171;
+    --glass: rgba(255,255,255,0.03);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%; margin:0; font-family:Inter,system-ui,Segoe UI,Roboto,Arial; background:linear-gradient(180deg,#071023 0%, #071733 100%); color:#e6eef8}
+  .app{max-width:920px; margin:18px auto; padding:18px;}
+  header{display:flex; gap:12px; align-items:center; justify-content:space-between}
+  h1{font-size:18px; margin:0}
+  .meta{font-size:12px; color:#9fb4c9}
+  .card{background:var(--card); padding:18px; border-radius:12px; margin-top:14px; box-shadow:0 6px 30px rgba(2,6,23,0.6)}
+  #titulo{font-size:20px; margin:0 0 10px 0}
+  #area{min-height:240px; display:flex; align-items:center; justify-content:center; position:relative; padding:12px}
+  button.primary{background:linear-gradient(90deg,var(--accent),#60a5fa); color:#06233a; border:none; padding:12px 18px; border-radius:10px; font-weight:600}
+  button.ghost{background:transparent; color:var(--accent); border:1px solid rgba(125,211,252,0.12); padding:8px 12px; border-radius:10px}
+  #resultado{font-weight:700; margin-top:14px; font-size:18px}
+  .small{font-size:13px; color:#a7c0d6}
+  .controls{display:flex; gap:8px; align-items:center; justify-content:flex-end}
+  .flex{display:flex}
+  .center{display:flex; align-items:center; justify-content:center}
+  /* challenge specific */
+  .big-num{font-size:48px; font-weight:800; letter-spacing:2px}
+  #movingBtn{padding:14px 18px; border-radius:12px; border:none; font-weight:700}
+  #hiddenBtn{position:absolute; opacity:0; padding:12px 16px; border-radius:8px; border:none}
+  .maze{width:260px; height:260px; position:relative; background:#061022; touch-action:none}
+  .wall{position:absolute; background:#072230}
+  .start, .end{position:absolute; display:flex; align-items:center; justify-content:center; font-weight:700; color:#06233a}
+  .start{background:#facc15; width:48px; height:48px; border-radius:8px}
+  .end{background:#34d399; width:48px; height:48px; border-radius:8px}
+  .piece{width:70px; height:70px; display:inline-grid; place-items:center; background:var(--glass); margin:6px; border-radius:8px; font-weight:800; user-select:none}
+  .row{display:flex; justify-content:center; gap:6px}
+  .grid-btn{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px}
+  input[type="number"], input[type="text"]{padding:8px; border-radius:8px; border:none; background:rgba(255,255,255,0.03); color:inherit}
+  /* small responsive tweaks */
+  @media(max-width:520px){
+    .app{padding:12px}
+    .maze{width:220px;height:220px}
+    .big-num{font-size:36px}
+  }
+</style>
+</head>
+<body>
+<div class="app card">
+  <header>
+    <div>
+      <h1>Desafíos Interactivos</h1>
+      <div class="meta">Escanea, completa y gana. Múltiples minijuegos — móvil ok.</div>
+    </div>
+    <div class="controls">
+      <button id="nuevo" class="ghost">Nuevo desafío</button>
+      <button id="reiniciar" class="ghost">Volver a intentar</button>
+    </div>
+  </header>
+
+  <main class="card" style="margin-top:12px">
+    <div id="titulo">Preparando desafío...</div>
+    <div id="area"></div>
+    <div id="resultado" class="center"></div>
+    <div style="display:flex; justify-content:space-between; margin-top:12px; align-items:center">
+      <div class="small">Desafíos: <span id="contador">0</span> • Victoria total: <span id="victorias">0</span></div>
+      <div class="small">Si quieres integrar premios reales, dime.</div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ====== CONFIG ====== */
+const RETRY_TIME = 1200; // ms when user wants to retry
+const CHALLENGES = [
+  'reflejos', 'memoria', 'mantener', 'moverBoton', 'oculto',
+  'adivinaNumero', 'puzzle3', 'color', 'laberinto', 'pregunta', 'boton1s'
+];
+/* ==================== */
+
+let contador = 0, victorias = 0;
+const titulo = document.getElementById('titulo');
+const area = document.getElementById('area');
+const resultado = document.getElementById('resultado');
+const contadorEl = document.getElementById('contador');
+const victEl = document.getElementById('victorias');
+document.getElementById('nuevo').addEventListener('click', start);
+document.getElementById('reiniciar').addEventListener('click', ()=> setTimeout(start,RETRY_TIME));
+
+/* Helpers */
+function clearArea(){ area.innerHTML=''; resultado.textContent=''; }
+function setTitulo(t){ titulo.textContent = t; }
+function setResultado(ok, text){
+  resultado.style.color = ok ? getComputedStyle(document.documentElement).getPropertyValue('--ok') : getComputedStyle(document.documentElement).getPropertyValue('--bad');
+  resultado.textContent = text;
+  contador++; contadorEl.textContent = contador;
+  if(ok){ victorias++; victEl.textContent = victorias; }
+}
+
+/* --- CHALLENGES IMPLEMENTATIONS --- */
+
+function retoReflejos(){
+  setTitulo('Reflejos — haz clic cuando se ponga verde');
+  clearArea();
+  const box = document.createElement('div');
+  box.style.width='100%'; box.style.height='160px'; box.style.display='flex'; box.style.alignItems='center'; box.style.justifyContent='center';
+  box.innerHTML = '<div class="small">Espera a que se ponga verde...</div>';
+  area.appendChild(box);
+  let triggered=false;
+  const delay = Math.random()*2500 + 800;
+  let timeout = setTimeout(()=> {
+    box.style.background='linear-gradient(90deg,#10b98133,#34d39922)';
+    box.innerHTML = '<button id="go" class="primary">¡AHORA!</button>';
+    const btn = document.getElementById('go');
+    const win = ()=> { if(triggered) return; triggered=true; clearTimeout(timeout); setResultado(true,'🎉 ¡Has ganado!'); };
+    const lose = ()=> { if(triggered) return; triggered=true; setResultado(false,'⛔ Rápido, pero no lo suficiente.'); };
+    btn.addEventListener('click', win);
+    // time limit small
+    timeout = setTimeout(()=> { if(!triggered) lose(); }, 2200);
+  }, delay);
+
+  // if user clicks too early -> lose
+  box.addEventListener('click', ()=> {
+    if(!box.querySelector('#go')) { setResultado(false,'⛔ Has hecho click antes'); clearTimeout(timeout); triggered=true; }
+  });
+}
+
+function retoMemoria(){
+  setTitulo('Memoria — memoriza el número y escríbelo');
+  clearArea();
+  const num = Math.floor(Math.random()*900 + 100);
+  const p = document.createElement('div'); p.className='center';
+  p.innerHTML = `<div class="big-num">${num}</div>`;
+  area.appendChild(p);
+  setTimeout(()=> {
+    p.innerHTML = `<div><input id="mem" type="number" placeholder="Escribe el número" /><div style="height:10px"></div><button class="primary" id="send">Enviar</button></div>`;
+    document.getElementById('send').addEventListener('click', ()=>{
+      const val = document.getElementById('mem').value;
+      if(String(val) === String(num)) setResultado(true,'🎉 Número correcto');
+      else setResultado(false,'❌ No coincide');
+    });
+  }, 2500);
+}
+
+function retoMantener(){
+  setTitulo('Mantén pulsado 3 segundos');
+  clearArea();
+  const btn = document.createElement('button'); btn.className='primary'; btn.id='hold'; btn.textContent='Mantén pulsado';
+  const box = document.createElement('div'); box.className='center'; box.appendChild(btn); area.appendChild(box);
+  let start;
+  let done=false;
+  function startHold(e){ e.preventDefault(); if(done) return; start = Date.now(); btn.textContent='Manteniendo...'; }
+  function endHold(e){ if(done) return; const diff = Date.now() - (start||0); btn.textContent='Mantén pulsado'; if(diff >= 3000) { done=true; setResultado(true,'🎉 Bien hecho'); } else setResultado(false,'⛔ Te has soltado pronto'); }
+  btn.addEventListener('mousedown', startHold);
+  btn.addEventListener('touchstart', startHold, {passive:false});
+  btn.addEventListener('mouseup', endHold);
+  btn.addEventListener('touchend', endHold);
+  btn.addEventListener('mouseleave', endHold);
+}
+
+function retoMoverBoton(){
+  setTitulo('Atrápame si puedes — el botón se mueve');
+  clearArea();
+  const box = document.createElement('div');
+  box.style.height='180px'; box.style.position='relative';
+  const btn = document.createElement('button'); btn.id='movingBtn'; btn.className='primary'; btn.textContent='Pulsame';
+  btn.style.position='absolute'; btn.style.left='calc(50% - 60px)'; btn.style.top='60px';
+  box.appendChild(btn); area.appendChild(box);
+  let tries=0;
+  function moveRandom(){
+    const w = box.clientWidth - 120; const h = box.clientHeight - 40;
+    const x = Math.max(6, Math.random()*w);
+    const y = Math.max(6, Math.random()*h);
+    btn.style.left = x + 'px'; btn.style.top = y + 'px';
+  }
+  // move button on hover / touchstart
+  btn.addEventListener('mouseenter', ()=> {
+    tries++;
+    if(tries>6){ setResultado(false,'😅 Te ha cansado, prueba otro'); return; }
+    moveRandom();
+  });
+  btn.addEventListener('touchstart', (e)=> { e.preventDefault(); moveRandom(); });
+  btn.addEventListener('click', ()=> setResultado(true,'🎉 Has conseguido pulsarlo'));
+  // also move every 1s a bit
+  const iv = setInterval(()=> { if(resultado.textContent) clearInterval(iv); else moveRandom(); }, 1200);
+  // initial jitter
+  moveRandom();
+}
+
+function retoOculto(){
+  setTitulo('Encuentra el botón oculto');
+  clearArea();
+  const cont = document.createElement('div'); cont.style.height='170px'; cont.style.position='relative';
+  const hint = document.createElement('div'); hint.className='small'; hint.textContent='Busca por la pantalla: hay un botón invisible en algún lugar';
+  area.appendChild(hint);
+  area.appendChild(cont);
+  const btn = document.createElement('button'); btn.id='hiddenBtn'; btn.textContent='Tocado';
+  // place randomly
+  const place = ()=> {
+    const W = cont.clientWidth || 320; const H = cont.clientHeight || 160;
+    const x = Math.random()*(W-80); const y = Math.random()*(H-40);
+    btn.style.left = x+'px'; btn.style.top = y+'px';
+    // small opacity so it's almost invisible on some devices - keep it 0 per request
+  };
+  cont.appendChild(btn);
+  place();
+  // allow hints after a while
+  setTimeout(()=> { hint.textContent = hint.textContent + ' • Consejo: toca zonas donde pienses que hay algo'; }, 4000);
+  btn.addEventListener('click', ()=> setResultado(true,'🎉 Botón encontrado'));
+  // accidental touches near area: if lots of touches -> reveal
+  let touches = 0;
+  cont.addEventListener('click', ()=> { touches++; if(touches>12) { btn.style.opacity=0.25; setResultado(false,'🧐 Muy arriesgado: casi lo hubieras encontrado.'); } });
+}
+
+function retoAdivinaNumero(){
+  setTitulo('Adivina el número (1–5)');
+  clearArea();
+  const n = Math.floor(Math.random()*5)+1;
+  const cont = document.createElement('div'); cont.className='center';
+  cont.innerHTML = `<div class="grid-btn">
+    <button class="ghost" data-v="1">1</button>
+    <button class="ghost" data-v="2">2</button>
+    <button class="ghost" data-v="3">3</button>
+    <button class="ghost" data-v="4">4</button>
+    <button class="ghost" data-v="5">5</button>
+  </div>`;
+  area.appendChild(cont);
+  cont.querySelectorAll('button').forEach(b=>{
+    b.addEventListener('click', ()=> {
+      if(Number(b.dataset.v) === n) setResultado(true,'🎉 Correcto');
+      else setResultado(false,'❌ Era '+n);
+    });
+  });
+}
+
+function retoPuzzle3(){
+  setTitulo('Puzzle 3 — ordénalas en 1-2-3');
+  clearArea();
+  const container = document.createElement('div');
+  container.style.display='flex'; container.style.flexDirection='column'; container.style.alignItems='center';
+  const row = document.createElement('div'); row.className='row';
+  // use swap on click
+  let arr = [1,2,3];
+  // shuffle
+  arr = arr.sort(()=>Math.random()-0.5);
+  function render(){
+    row.innerHTML='';
+    arr.forEach((v,i)=>{
+      const p = document.createElement('div'); p.className='piece'; p.textContent = v; p.dataset.i=i;
+      p.addEventListener('click', ()=> {
+        if(row.querySelector('.selected')) {
+          const sel = row.querySelector('.selected');
+          const i1 = Number(sel.dataset.i);
+          const i2 = Number(p.dataset.i);
+          // swap
+          [arr[i1],arr[i2]] = [arr[i2],arr[i1]];
+          sel.classList.remove('selected'); render();
+          // check
+          if(arr.join('') === '123') setResultado(true,'🎉 Orden correcto');
+        } else {
+          p.classList.add('selected'); p.style.transform='scale(1.05)';
+        }
+      });
+      row.appendChild(p);
+    });
+  }
+  container.appendChild(row);
+  container.appendChild(document.createElement('div'));
+  area.appendChild(container);
+  render();
+  // timeout lose if they take too long
+  setTimeout(()=> { if(!resultado.textContent) setResultado(false,'⏳ Se acabó el tiempo (intenta de nuevo)'); }, 18000);
+}
+
+function retoColor(){
+  setTitulo('Elige el color que se muestra');
+  clearArea();
+  const colors = ['Rojo','Verde','Azul','Amarillo'];
+  const pick = colors[Math.floor(Math.random()*colors.length)];
+  const show = document.createElement('div'); show.innerHTML = `<div class="big-num">${pick}</div>`;
+  const btns = document.createElement('div'); btns.className='row';
+  ['Rojo','Verde','Azul','Amarillo'].forEach(c=>{
+    const b = document.createElement('button'); b.className='ghost'; b.textContent=c;
+    b.addEventListener('click', ()=> setResultado(c===pick, c===pick ? '🎉 Correcto' : `❌ No, era ${pick}`));
+    btns.appendChild(b);
+  });
+  area.appendChild(show); area.appendChild(btns);
+}
+
+function retoLaberinto(){
+  setTitulo('Laberinto — no toques paredes (mueve el punto)');
+  clearArea();
+  const box = document.createElement('div'); box.className='maze';
+  // simple maze using walls rectangles
+  const walls = [
+    {x:0,y:0,w:260,h:8},{x:0,y:252,w:260,h:8},{x:0,y:0,w:8,h:260},{x:252,y:0,w:8,h:260},
+    {x:40,y:40,w:180,h:8},{x:40,y:40,w:8,h:120},{x:212,y:40,w:8,h:120},{x:40,y:152,w:180,h:8},
+    {x:80,y:80,w:100,h:8},{x:80,y:80,w:8,h:40}
+  ];
+  walls.forEach(w=>{
+    const div = document.createElement('div'); div.className='wall';
+    div.style.left = w.x+'px'; div.style.top = w.y+'px'; div.style.width = w.w+'px'; div.style.height = w.h+'px';
+    box.appendChild(div);
+  });
+  const start = document.createElement('div'); start.className='start'; start.style.left='12px'; start.style.top='12px'; start.textContent='S';
+  const end = document.createElement('div'); end.className='end'; end.style.left='200px'; end.style.top='200px'; end.textContent='✓';
+  const player = document.createElement('div'); player.style.width='18px'; player.style.height='18px'; player.style.background='#60a5fa'; player.style.borderRadius='50%'; player.style.position='absolute'; player.style.left='20px'; player.style.top='20px';
+  box.appendChild(start); box.appendChild(end); box.appendChild(player);
+  area.appendChild(box);
+  // move player with touch/mouse drag
+  let dragging=false, offsetX=0, offsetY=0;
+  player.addEventListener('mousedown', e=>{ dragging=true; offsetX = e.offsetX; offsetY=e.offsetY; });
+  document.addEventListener('mouseup', ()=> dragging=false);
+  document.addEventListener('mousemove', e=>{
+    if(!dragging) return;
+    const rect = box.getBoundingClientRect();
+    let x = e.clientX - rect.left - offsetX, y = e.clientY - rect.top - offsetY;
+    x=Math.max(10,Math.min(rect.width-20,x)); y=Math.max(10,Math.min(rect.height-20,y));
+    player.style.left = x+'px'; player.style.top = y+'px';
+    if(collides(player, box.querySelectorAll('.wall'))) { setResultado(false,'❌ Has tocado la pared'); dragging=false; }
+    // check success
+    if(intersect(player,end)) { setResultado(true,'🎉 Has salido del laberinto'); dragging=false; }
+  });
+  // mobile touch
+  player.addEventListener('touchstart', e=>{ dragging=true; const t=e.touches[0]; const r=player.getBoundingClientRect(); offsetX = t.clientX - r.left; offsetY = t.clientY - r.top; });
+  document.addEventListener('touchend', ()=> dragging=false);
+  document.addEventListener('touchmove', e=>{
+    if(!dragging) return;
+    const t = e.touches[0]; const rect = box.getBoundingClientRect();
+    let x = t.clientX - rect.left - offsetX, y = t.clientY - rect.top - offsetY;
+    x=Math.max(10,Math.min(rect.width-20,x)); y=Math.max(10,Math.min(rect.height-20,y));
+    player.style.left = x+'px'; player.style.top = y+'px';
+    if(collides(player, box.querySelectorAll('.wall'))) { setResultado(false,'❌ Has tocado la pared'); dragging=false; }
+    if(intersect(player,end)) { setResultado(true,'🎉 Has salido del laberinto'); dragging=false; }
+  });
+
+  // collision helper
+  function collides(el, nodeList){
+    for(const w of nodeList){
+      if(intersect(el,w)) return true;
+    }
+    return false;
+  }
+  function intersect(a,b){
+    const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    return !(ra.right < rb.left || ra.left > rb.right || ra.bottom < rb.top || ra.top > rb.bottom);
+  }
+}
+
+function retoPregunta(){
+  setTitulo('Pregunta rápida');
+  clearArea();
+  const q = {q:'¿Cuál es la capital de España?', options:['Lisboa','Madrid','Barcelona','Valencia'], a:1};
+  const el = document.createElement('div'); el.innerHTML = `<div class="small">${q.q}</div>`;
+  q.options.forEach((o,i)=>{
+    const b = document.createElement('button'); b.className='ghost'; b.textContent=o; b.style.margin='6px';
+    b.addEventListener('click', ()=> setResultado(i===q.a, i===q.a ? '🎉 Correcto' : '❌ Incorrecto'));
+    el.appendChild(b);
+  });
+  area.appendChild(el);
+}
+
+function retoBoton1s(){
+  setTitulo('Un botón aparece 1 segundo — ¡clicalo!');
+  clearArea();
+  const cont = document.createElement('div'); cont.style.minHeight='120px'; cont.className='center';
+  area.appendChild(cont);
+  const when = Math.random()*2500 + 800;
+  cont.innerHTML = '<div class="small">Prepárate...</div>';
+  setTimeout(()=> {
+    const b = document.createElement('button'); b.className='primary'; b.textContent='¡Ahora!';
+    cont.innerHTML=''; cont.appendChild(b);
+    // remove after 1s
+    const t = setTimeout(()=> { if(!resultado.textContent) setResultado(false,'⛔ Se fue demasiado rápido'); }, 1000);
+    b.addEventListener('click', ()=> { clearTimeout(t); setResultado(true,'🎉 Buen ojo'); });
+  }, when);
+}
+
+/* --- choose and start --- */
+function start(){
+  if(resultado.textContent) resultado.textContent=''; clearArea();
+  setResultado(false,''); // reset colors
+  const choice = CHALLENGES[Math.floor(Math.random()*CHALLENGES.length)];
+  // call function
+  switch(choice){
+    case 'reflejos': retoReflejos(); break;
+    case 'memoria': retoMemoria(); break;
+    case 'mantener': retoMantener(); break;
+    case 'moverBoton': retoMoverBoton(); break;
+    case 'oculto': retoOculto(); break;
+    case 'adivinaNumero': retoAdivinaNumero(); break;
+    case 'puzzle3': retoPuzzle3(); break;
+    case 'color': retoColor(); break;
+    case 'laberinto': retoLaberinto(); break;
+    case 'pregunta': retoPregunta(); break;
+    case 'boton1s': retoBoton1s(); break;
+    default: retoReflejos();
+  }
+}
+
+/* inicial */
+start();
+
+/* Quick improvement: let user "claim prize" (fake) */
+document.addEventListener('click', (e)=>{
+  if(e.target && e.target.matches('.claim-prize')) {
+    alert('Premio emitido: cupón falso. Para premios reales integra tu backend.');
+  }
+});
+</script>
+</body>
+</html>
