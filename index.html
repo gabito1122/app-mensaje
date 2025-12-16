@@ -65,7 +65,7 @@
     <div id="resultado" class="center"></div>
     <div style="display:flex; justify-content:space-between; margin-top:12px; align-items:center">
       <div class="small">Desafíos: <span id="contador">0</span> • Victoria total: <span id="victorias">0</span></div>
-      <div class="small">Si quieres integrar premios reales, dime.</div>
+      <div class="small">Si ganas recibiras un premio.</div>
     </div>
   </main>
 </div>
@@ -113,7 +113,7 @@ function retoReflejos(){
     box.style.background='linear-gradient(90deg,#10b98133,#34d39922)';
     box.innerHTML = '<button id="go" class="primary">¡AHORA!</button>';
     const btn = document.getElementById('go');
-    const win = ()=> { if(triggered) return; triggered=true; clearTimeout(timeout); setResultado(true,'🎉 ¡Has ganado!'); };
+    const win = ()=> { if(triggered) return; triggered=true; clearTimeout(timeout); setResultado(true,'Has ganado un descuento del 15% con este codigo FJKA746F9!'); };
     const lose = ()=> { if(triggered) return; triggered=true; setResultado(false,'⛔ Rápido, pero no lo suficiente.'); };
     btn.addEventListener('click', win);
     // time limit small
@@ -137,7 +137,7 @@ function retoMemoria(){
     p.innerHTML = `<div><input id="mem" type="number" placeholder="Escribe el número" /><div style="height:10px"></div><button class="primary" id="send">Enviar</button></div>`;
     document.getElementById('send').addEventListener('click', ()=>{
       const val = document.getElementById('mem').value;
-      if(String(val) === String(num)) setResultado(true,'🎉 Número correcto');
+      if(String(val) === String(num)) setResultado(true,'Has ganado un descuento del 15% con este codigo GLA87V4M9');
       else setResultado(false,'❌ No coincide');
     });
   }, 2500);
@@ -151,7 +151,7 @@ function retoMantener(){
   let start;
   let done=false;
   function startHold(e){ e.preventDefault(); if(done) return; start = Date.now(); btn.textContent='Manteniendo...'; }
-  function endHold(e){ if(done) return; const diff = Date.now() - (start||0); btn.textContent='Mantén pulsado'; if(diff >= 3000) { done=true; setResultado(true,'🎉 Bien hecho'); } else setResultado(false,'⛔ Te has soltado pronto'); }
+  function endHold(e){ if(done) return; const diff = Date.now() - (start||0); btn.textContent='Mantén pulsado'; if(diff >= 3000) { done=true; setResultado(true,'Has ganado un descuento del 15% con este codigo JG83M7FA9'); } else setResultado(false,'⛔ Te has soltado pronto'); }
   btn.addEventListener('mousedown', startHold);
   btn.addEventListener('touchstart', startHold, {passive:false});
   btn.addEventListener('mouseup', endHold);
@@ -181,7 +181,7 @@ function retoMoverBoton(){
     moveRandom();
   });
   btn.addEventListener('touchstart', (e)=> { e.preventDefault(); moveRandom(); });
-  btn.addEventListener('click', ()=> setResultado(true,'🎉 Has conseguido pulsarlo'));
+  btn.addEventListener('click', ()=> setResultado(true,'Has ganado un descuento del 15% con este codigo AJV87GJ48'));
   // also move every 1s a bit
   const iv = setInterval(()=> { if(resultado.textContent) clearInterval(iv); else moveRandom(); }, 1200);
   // initial jitter
@@ -207,7 +207,7 @@ function retoOculto(){
   place();
   // allow hints after a while
   setTimeout(()=> { hint.textContent = hint.textContent + ' • Consejo: toca zonas donde pienses que hay algo'; }, 4000);
-  btn.addEventListener('click', ()=> setResultado(true,'🎉 Botón encontrado'));
+  btn.addEventListener('click', ()=> setResultado(true,'Has ganado un descuento del 15% con este codigo KGIEN75A8'));
   // accidental touches near area: if lots of touches -> reveal
   let touches = 0;
   cont.addEventListener('click', ()=> { touches++; if(touches>12) { btn.style.opacity=0.25; setResultado(false,'🧐 Muy arriesgado: casi lo hubieras encontrado.'); } });
@@ -228,7 +228,7 @@ function retoAdivinaNumero(){
   area.appendChild(cont);
   cont.querySelectorAll('button').forEach(b=>{
     b.addEventListener('click', ()=> {
-      if(Number(b.dataset.v) === n) setResultado(true,'🎉 Correcto');
+      if(Number(b.dataset.v) === n) setResultado(true,'Has ganado un descuento del 15% con este codigo 78AJF83M5');
       else setResultado(false,'❌ Era '+n);
     });
   });
@@ -257,7 +257,7 @@ function retoPuzzle3(){
           [arr[i1],arr[i2]] = [arr[i2],arr[i1]];
           sel.classList.remove('selected'); render();
           // check
-          if(arr.join('') === '123') setResultado(true,'🎉 Orden correcto');
+          if(arr.join('') === '123') setResultado(true,'Has ganado un descuento del 15% con este codigo B884JS701');
         } else {
           p.classList.add('selected'); p.style.transform='scale(1.05)';
         }
@@ -282,7 +282,7 @@ function retoColor(){
   const btns = document.createElement('div'); btns.className='row';
   ['Rojo','Verde','Azul','Amarillo'].forEach(c=>{
     const b = document.createElement('button'); b.className='ghost'; b.textContent=c;
-    b.addEventListener('click', ()=> setResultado(c===pick, c===pick ? '🎉 Correcto' : `❌ No, era ${pick}`));
+    b.addEventListener('click', ()=> setResultado(c===pick, c===pick ? 'Has ganado un descuento del 15% con este codigo A7BKA64J8' : `❌ No, era ${pick}`));
     btns.appendChild(b);
   });
   area.appendChild(show); area.appendChild(btns);
@@ -320,7 +320,7 @@ function retoLaberinto(){
     player.style.left = x+'px'; player.style.top = y+'px';
     if(collides(player, box.querySelectorAll('.wall'))) { setResultado(false,'❌ Has tocado la pared'); dragging=false; }
     // check success
-    if(intersect(player,end)) { setResultado(true,'🎉 Has salido del laberinto'); dragging=false; }
+    if(intersect(player,end)) { setResultado(true,'Has ganado un descuento del 15% con este codigo 38VK487V7'); dragging=false; }
   });
   // mobile touch
   player.addEventListener('touchstart', e=>{ dragging=true; const t=e.touches[0]; const r=player.getBoundingClientRect(); offsetX = t.clientX - r.left; offsetY = t.clientY - r.top; });
@@ -332,7 +332,7 @@ function retoLaberinto(){
     x=Math.max(10,Math.min(rect.width-20,x)); y=Math.max(10,Math.min(rect.height-20,y));
     player.style.left = x+'px'; player.style.top = y+'px';
     if(collides(player, box.querySelectorAll('.wall'))) { setResultado(false,'❌ Has tocado la pared'); dragging=false; }
-    if(intersect(player,end)) { setResultado(true,'🎉 Has salido del laberinto'); dragging=false; }
+    if(intersect(player,end)) { setResultado(true,'Has ganado un descuento del 15% con este codigo 9643B93JD'); dragging=false; }
   });
 
   // collision helper
@@ -355,7 +355,7 @@ function retoPregunta(){
   const el = document.createElement('div'); el.innerHTML = `<div class="small">${q.q}</div>`;
   q.options.forEach((o,i)=>{
     const b = document.createElement('button'); b.className='ghost'; b.textContent=o; b.style.margin='6px';
-    b.addEventListener('click', ()=> setResultado(i===q.a, i===q.a ? '🎉 Correcto' : '❌ Incorrecto'));
+    b.addEventListener('click', ()=> setResultado(i===q.a, i===q.a ? 'Has ganado un descuento del 15% con este codigo AJKC8A5VA' : '❌ Incorrecto'));
     el.appendChild(b);
   });
   area.appendChild(el);
@@ -373,7 +373,7 @@ function retoBoton1s(){
     cont.innerHTML=''; cont.appendChild(b);
     // remove after 1s
     const t = setTimeout(()=> { if(!resultado.textContent) setResultado(false,'⛔ Se fue demasiado rápido'); }, 1000);
-    b.addEventListener('click', ()=> { clearTimeout(t); setResultado(true,'🎉 Buen ojo'); });
+    b.addEventListener('click', ()=> { clearTimeout(t); setResultado(true,'Has ganado un descuento del 15% con este codigo A796GCA06'); });
   }, when);
 }
 
